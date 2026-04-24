@@ -1,0 +1,12 @@
+[
+  {
+    "id": "it_category_gadgets",
+    "name": "Integration Gadgets",
+    "imageUrl": "https://picsum.photos/seed/integration-category/400/400"
+  },
+  {
+    "id": "it_category_audio",
+    "name": "Integration Audio",
+    "imageUrl": "https://picsum.photos/seed/integration-audio/400/400"
+  }
+]

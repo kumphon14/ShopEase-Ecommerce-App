@@ -1,0 +1,15 @@
+{
+  "customer": {
+    "email": "customer.integration@shopease.test",
+    "password": "TestPass1!",
+    "name": "Golden Path Customer",
+    "role": "customer"
+  },
+  "admin": {
+    "email": "admin.integration@shopease.test",
+    "password": "AdminPass1!",
+    "name": "Integration Admin",
+    "role": "admin",
+    "secretKey": "SHOPEASE2024"
+  }
+}

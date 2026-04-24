@@ -1,0 +1,24 @@
+[
+  {
+    "id": "it_product_phone",
+    "name": "Integration Phone Alpha",
+    "description": "Seeded product for checkout integration coverage.",
+    "price": 199.99,
+    "imageUrl": "https://picsum.photos/seed/integration-phone/400/400",
+    "categoryId": "it_category_gadgets",
+    "isFeatured": true,
+    "rating": 4.8,
+    "admin_rating": 4.8
+  },
+  {
+    "id": "it_product_headphones",
+    "name": "Integration Headphones Beta",
+    "description": "Secondary seeded product for catalog stability.",
+    "price": 89.5,
+    "imageUrl": "https://picsum.photos/seed/integration-headphones/400/400",
+    "categoryId": "it_category_audio",
+    "isFeatured": true,
+    "rating": 4.4,
+    "admin_rating": 4.4
+  }
+]

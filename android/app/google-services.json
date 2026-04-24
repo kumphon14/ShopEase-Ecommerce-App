@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "270441798341",
+    "project_id": "shopease-ecommearc-app",
+    "storage_bucket": "shopease-ecommearc-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:270441798341:android:a84185d116558739016eac",
+        "android_client_info": {
+          "package_name": "com.example.shopease_ecommerce_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAXni5_dNLDFpZoOY36v8DscKQQts2ZZio"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
