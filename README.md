@@ -1,62 +1,134 @@
 # ShopEase Ecommerce
 
-ShopEase is a Flutter + Firebase e-commerce application built for the SEA606 coursework. The project includes customer shopping flows, admin management flows, Firebase Authentication, Cloud Firestore-backed CRUD, and a local persistent cart implemented with `shared_preferences`.
+ShopEase is a cross-platform Flutter + Firebase e-commerce application developed for the SEA606 coursework. The system supports customer shopping workflows, admin management workflows, cloud-backed shared data, and device-local cart persistence.
 
-## Core Features
+## Project Overview
 
-- Customer authentication with Firebase Auth
-- Product browsing, product detail, cart, checkout, and order history
-- Wishlist and profile management
-- Admin login, product management, order management, category management, and bank details management
-- Cloud-backed shared data with Firestore
-- Local persistent cart storage across app restarts and browser refreshes
+ShopEase demonstrates a practical two-tier data model for a mobile/web commerce application:
 
-## Local Persistent Storage
+- **Cloud data** is managed with Firebase Authentication and Cloud Firestore.
+- **Local data** is managed with `shared_preferences` to persist the shopping cart across app restarts and browser refreshes.
 
-To satisfy the assignment's two-tier storage requirement, ShopEase now persists cart data locally using `shared_preferences`.
+The application is designed as a realistic course project rather than a prototype-only UI. It includes customer-facing purchasing flows and administrator-facing management flows.
 
-- Package used: `shared_preferences`
-- Stored data: lightweight cart records only
-  - `productId`
-  - `quantity`
-  - `updatedAt`
-- Storage key strategy:
-  - authenticated user: `shop_ease_cart_<uid>`
-  - guest fallback: `shop_ease_cart_guest`
-- Rehydration strategy:
-  - local storage keeps lightweight references
-  - product details are reloaded from Firestore when the app restores the cart
-  - missing products are skipped safely
+## Objective
 
-This keeps the Product model and Firestore product schema unchanged while providing meaningful device-local persistence for Android and Web.
+The project objective is to build and test a cross-platform e-commerce application that demonstrates:
 
-## Project Structure
+- Firebase Authentication
+- Firestore-backed CRUD operations
+- multi-page navigation
+- meaningful local persistent storage
+- executable unit, widget, and integration testing
 
-- `lib/` production source
-- `test/unit/` unit tests
-- `test/widget/` widget tests
-- `test/integration/` integration tests and helpers
-- `test/TESTING_REPORT.md` master testing report
+## Target Users
 
-## Setup
+- **Customers** who browse products, manage wishlists, update profiles, add items to cart, and place orders
+- **Administrators** who manage products, categories, orders, and bank/payment details
+
+## Technology Stack
+
+- Flutter
+- Dart
+- Provider
+- Firebase Authentication
+- Cloud Firestore
+- Firebase Storage
+- `shared_preferences`
+
+## Main Features
+
+- Firebase email/password authentication
+- customer browsing and checkout flow
+- admin login and dashboard flow
+- Firestore-backed product, category, order, and bank-detail management
+- wishlist and profile features
+- local cart persistence across restart/refresh
+
+## User Features
+
+- landing, login, and signup
+- home, category browsing, search, and product detail
+- cart and checkout
+- order history
+- wishlist
+- profile update
+- notifications
+
+## Admin Features
+
+- admin login
+- admin dashboard
+- manage products
+- add/edit products
+- manage orders
+- manage categories
+- manage bank details
+
+## Firebase Authentication Summary
+
+ShopEase uses Firebase Authentication for customer login/signup and admin login flows. The repository evidence shows authentication UI, validation, and logout behavior. Session-startup behavior is documented honestly as a minor limitation because the splash/entry flow is not fully auth-aware at startup.
+
+## Firestore Cloud Data Summary
+
+Cloud Firestore is used for shared application data, including:
+
+- products
+- categories
+- orders
+- wishlist data
+- bank/payment details
+- profile-related user data
+
+These collections support the app's shared multi-user business features. The Firestore product schema was not changed during the local persistence work.
+
+## Local Persistent Storage Summary
+
+Local persistent storage is implemented with `shared_preferences`.
+
+- **Stored fields:** `productId`, `quantity`, `updatedAt`
+- **Key strategy:** `shop_ease_cart_<uid>` for authenticated users, `shop_ease_cart_guest` for guest/device-local storage
+- **Design:** lightweight cart references are stored locally, then product details are rehydrated from Firestore
+
+This keeps the Product model unchanged while satisfying the assignment requirement for meaningful local persistent storage.
+
+## Android and Web Execution Summary
+
+Current execution evidence shows:
+
+- Android integration smoke execution verified on `emulator-5554`
+- Android manual screenshots collected under `submission_evidence/android/`
+- Web manual screenshots collected under `submission_evidence/web/`
+- Chrome integration automation remains environment-dependent because WebDriver/ChromeDriver is required
+
+## Testing Summary
+
+Verified results:
+
+- `flutter analyze`: passed, no issues found
+- `flutter test test\unit`: passed, **244** tests
+- `flutter test test\widget`: passed, **241** tests
+- `flutter test integration_test -d emulator-5554`: passed for Android smoke integration
+
+Important limitation:
+
+- Full seeded integration suites remain environment-dependent because they require Firebase Auth/Firestore emulator setup or a suitable test backend.
+- Chrome integration automation remains environment-dependent because `flutter test integration_test -d chrome` is unsupported in this toolchain and `flutter drive` requires WebDriver.
+
+## Setup Instructions
 
 ```powershell
 flutter pub get
 ```
 
-Firebase configuration is already present in the repository. For emulator-backed integration tests, start the required Firebase emulators before running those flows.
+Firebase configuration files are already present in the repository. For full emulator-backed integration execution, start the required Firebase emulators before running seeded integration flows.
 
-## Run the App
+## Run Commands
 
 ```powershell
 flutter run
-```
-
-Examples:
-
-```powershell
-flutter run -d chrome
 flutter run -d emulator-5554
+flutter run -d chrome
 ```
 
 ## Test Commands
@@ -65,42 +137,33 @@ flutter run -d emulator-5554
 flutter analyze
 flutter test test\unit
 flutter test test\widget
+flutter test integration_test -d emulator-5554
+flutter test integration_test -d chrome
+flutter drive --driver=test_driver\integration_test.dart --target=integration_test\app_smoke_test.dart -d chrome
 ```
 
-Integration tests are documented under `test/integration/README.md`. The integration harness is now fixed, standard `integration_test/` entry points exist, and Android smoke execution is verified. Full seeded business-flow suites still require Firebase emulator availability, and Chrome verification still requires WebDriver.
+## Documentation Index
 
-## Manual Verification for Local Cart Persistence
+Final instructor-facing documents:
 
-### Android
+1. [README.md](E:/shopease_ecommerce_app/README.md)
+2. [TECHNICAL_REPORT.md](E:/shopease_ecommerce_app/TECHNICAL_REPORT.md)
+3. [TESTING_PLAN.md](E:/shopease_ecommerce_app/TESTING_PLAN.md)
+4. [TESTING_REPORT.md](E:/shopease_ecommerce_app/TESTING_REPORT.md)
+5. [SUBMISSION_EVIDENCE_INDEX.md](E:/shopease_ecommerce_app/SUBMISSION_EVIDENCE_INDEX.md)
 
-1. Run the app on a Pixel 6 Android 14 emulator.
-2. Login or continue as guest.
-3. Add a product to cart.
-4. Close the app.
-5. Reopen the app.
-6. Confirm the cart still contains the product and quantity.
+Supporting/internal working documents are archived under `docs/internal/`.
 
-### Web
+## Known Limitations
 
-1. Run the app on Chrome.
-2. Login or continue as guest.
-3. Add a product to cart.
-4. Refresh the browser.
-5. Confirm the cart still contains the product and quantity.
+- Full seeded integration suites are implemented but still environment-dependent.
+- Chrome integration automation is not fully execution-verified in the current environment.
+- Startup session behavior is only partially evidenced because the splash/entry flow does not fully skip the landing route.
+- Performance/usability workshop metrics are not the focus of the repository evidence set.
 
-## Verification Snapshot
-
-Latest verified local status:
-
-- `flutter pub get`: passed
-- `flutter analyze`: passed, no issues found
-- `flutter test test\unit`: passed, 244 tests
-- `flutter test test\widget`: passed, 241 tests
-- `flutter test integration_test -d emulator-5554`: passed for Android smoke integration
-
-## Notes
+## Integrity Notes
 
 - Product model structure was not changed.
-- Firestore product collection schema was not changed.
+- Firestore product schema was not changed.
 - Provider architecture was preserved.
-- The cart persistence implementation is intentionally lightweight and assignment-safe.
+- This final documentation set is evidence-based and does not claim unsupported test results.

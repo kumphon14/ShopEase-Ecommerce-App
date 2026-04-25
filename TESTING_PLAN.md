@@ -1,200 +1,215 @@
-# ShopEase System Testing Plan
+# Testing Plan: ShopEase Ecommerce
 
-**Document role:** Supporting planning document for the SEA606 final testing report  
-**Project:** ShopEase Flutter E-Commerce Application  
-**Status:** Aligned with repository audit on 2026-04-23  
-**Master report:** `test/TESTING_REPORT.md`
+## 1. Testing Objectives
 
----
+The objective of this testing plan is to define how ShopEase will be validated before submission. The plan covers:
 
-## 1. Purpose
+- functional correctness
+- navigation correctness
+- Firebase/cloud data behavior
+- local persistent storage behavior
+- cross-platform execution evidence
+- regression prevention through automated testing
 
-This document describes the planned and implemented testing approach for the ShopEase system. It is now a supporting plan rather than the final evidence report. Current execution evidence, requirement traceability, defects, and final conclusions are consolidated in `test/TESTING_REPORT.md`.
+## 2. Scope of Testing
 
----
+This plan covers the current production scope of the ShopEase application:
 
-## 2. Testing Scope
+- customer authentication and shopping flows
+- admin authentication and management flows
+- Firestore-backed CRUD features
+- local cart persistence using `shared_preferences`
+- Android and Web execution evidence
 
-| Testing layer | Planned role | Current repository status |
+Out of current production scope:
+
+- Order Tracking as a separate production flow
+- performance benchmarking beyond documented evidence
+- security penetration testing
+
+## 3. Features Under Test
+
+- login, signup, and logout
+- home/catalog browsing
+- category/search/product detail flows
+- cart and checkout
+- order history
+- wishlist
+- profile update
+- admin login
+- admin product management
+- admin order management
+- admin category management
+- admin bank-details management
+- local cart persistence across restart/refresh
+
+## 4. Test Levels
+
+### 4.1 Unit Testing
+
+Purpose:
+
+- verify isolated logic
+- validate models, utilities, and provider behavior
+- catch regressions quickly
+
+### 4.2 Widget Testing
+
+Purpose:
+
+- verify UI rendering
+- validate form behavior and interaction
+- validate route-level navigation triggers
+- verify provider-driven widget state
+
+### 4.3 Integration Testing
+
+Purpose:
+
+- verify cross-boundary behavior across UI, Provider, navigation, and Firebase-backed paths
+- verify Android smoke integration through standard `integration_test/` entry points
+- retain full seeded suites for environment-backed execution
+
+### 4.4 Manual Testing
+
+Purpose:
+
+- capture Android/Web screenshots for instructor-facing evidence
+- confirm visible user/admin workflows
+- verify local cart persistence across restart/refresh from an end-user perspective
+
+## 5. Test Environment
+
+Primary environment components:
+
+- Flutter SDK
+- Dart
+- Android emulator `emulator-5554`
+- Chrome browser
+- Firebase Auth and Cloud Firestore integration
+- `shared_preferences` local persistence
+
+Environment note:
+
+- Full seeded integration suites require Firebase Auth/Firestore emulators or a suitable backend configuration.
+- Chrome integration automation requires WebDriver/ChromeDriver for `flutter drive`.
+
+## 6. Test Data Assumptions
+
+- Firebase configuration is present and valid for the project
+- test user/admin credentials and seeded Firestore data are available when full integration suites are run
+- product records exist for browse/cart/checkout flows
+- local cart storage may be user-specific or guest-scoped depending on auth state
+
+## 7. Requirement-to-Test Mapping
+
+| Requirement | Planned validation |
+|---|---|
+| R1 Authentication | unit tests, widget tests, integration auth flows, manual login screenshots |
+| R2 Navigation | widget navigation checks, integration smoke, manual customer/admin page screenshots |
+| R3 Cross-platform execution | Android smoke integration, Android/Web screenshot evidence, device logs |
+| R4 Data storage | provider/unit tests, local cart persistence tests, manual before/after restart/refresh screenshots |
+| R5 CLI testability | documented Flutter commands and saved execution logs |
+
+## 8. Test Case Design Approach
+
+The plan uses a mix of:
+
+- **Equivalence Partitioning** for valid/invalid auth input, form input, checkout states, and admin form cases
+- **Boundary Value Analysis** for password length, cart quantity, and required-field cases
+- **Scenario-based testing** for customer and admin workflows
+- **Evidence-backed manual checks** for cross-platform execution and persistence confirmation
+
+## 9. Entry Criteria
+
+Testing may begin when:
+
+- project dependencies are installed
+- Firebase configuration is present
+- Flutter toolchain is available
+- emulator/browser targets are available as required
+- code changes intended for the submission baseline are complete
+
+## 10. Exit Criteria
+
+Testing is considered sufficient for submission when:
+
+- `flutter analyze` passes
+- unit tests pass
+- widget tests pass
+- Android integration smoke test passes
+- manual Android and Web evidence is collected
+- known environment-dependent integration limitations are documented honestly
+
+## 11. Risk-Based Testing Plan
+
+| Risk Area | Risk Level | Planned response |
 |---|---|---|
-| Unit testing | Verify isolated models, utilities, provider logic, route constants, and mock/seed data integrity | Implemented and execution verified |
-| Widget testing | Verify UI rendering, form validation, interaction, provider-driven screen states, and navigation triggers | Implemented and execution verified |
-| Integration testing | Verify real business flows across UI, Provider, navigation, Firebase Auth, and Firestore emulator boundaries | Implemented; local execution not verified in the audit runner |
-| Performance testing | Collect workflow timing, error-rate, and efficiency metrics | Structure documented; empirical evidence not found |
-| Usability testing | Record workshop/user task results and reflections | Structure documented; empirical evidence not found |
-| Security testing | Validate Firebase Security Rules and abuse cases | Out of scope for the current repository evidence |
+| Authentication failure or invalid form handling | High | strong unit/widget coverage plus manual login evidence |
+| Cart/checkout regression | High | unit/widget coverage, manual persistence evidence, Android smoke infrastructure |
+| Admin CRUD regressions | High | integration flow coverage plus manual admin screenshots |
+| Local storage corruption or mismatch | Medium | unit tests for storage service and manual before/after restart checks |
+| Web automation environment blocker | Medium | document blocker, preserve manual Web execution evidence |
+| Full seeded integration flakiness | Medium | keep suites implemented, document emulator dependency honestly |
 
-Order Tracking is intentionally outside the current production scope. The current app exposes Order History, but no production tracking route or integration flow is required.
-
----
-
-## 3. System Under Test
-
-ShopEase is a Flutter application using:
-
-- `Provider` / `ChangeNotifier` for app state.
-- Firebase Auth for customer/admin authentication.
-- Cloud Firestore for products, categories, orders, bank details, users, wishlist, and notifications.
-- Named routes in `lib/core/routes/app_routes.dart`.
-- Customer-facing screens for browsing, cart, checkout, profile, wishlist, and order history.
-- Admin screens for login, product, category, order, and bank-detail management.
-
----
-
-## 4. Testing Pyramid
-
-The planned strategy follows a testing pyramid:
-
-1. **Unit tests** provide the broadest, fastest regression layer for pure logic and provider state behavior.
-2. **Widget tests** validate screen/widget behavior with controlled provider dependencies.
-3. **Integration tests** validate only the flows that require multiple screens, providers, navigation, and Firebase-backed persistence.
-
-This division prevents integration tests from being used as expensive replacements for unit/widget checks.
-
----
-
-## 5. Unit Test Plan
-
-### In scope
-
-- Model serialization/deserialization.
-- Derived model getters.
-- Provider state transitions.
-- Validation logic.
-- Currency utilities.
-- Route constant correctness.
-- Mock data and seed-data integrity where testable without backend execution.
-
-### Expected command
+## 12. Planned Automated Commands
 
 ```powershell
+flutter --version
+flutter doctor -v
+flutter devices
+flutter analyze
 flutter test test\unit
-```
-
-### Current evidence
-
-The audit run passed 235 unit tests with 0 failures and 0 skips.
-
----
-
-## 6. Widget Test Plan
-
-### In scope
-
-- Authentication/admin login forms.
-- Home, category, search, product detail, cart, checkout, profile, wishlist, and admin screens.
-- Shared widgets such as product cards, order tiles, custom buttons, custom text fields, and star ratings.
-- Navigation triggers and route pushes where widget-level verification is sufficient.
-
-### Expected command
-
-```powershell
 flutter test test\widget
+flutter test integration_test -d emulator-5554
+flutter test integration_test -d chrome
+flutter drive --driver=test_driver\integration_test.dart --target=integration_test\app_smoke_test.dart -d chrome
 ```
 
-### Current evidence
+## 13. Android Manual Testing Plan
 
-The audit run passed 241 widget tests with 0 failures and 0 skips. The command output included non-fatal hit-test warnings for some off-screen taps; these are documented as residual flakiness risk in the master report.
+1. Run `flutter run -d emulator-5554`
+2. Open ShopEase on the Android emulator
+3. Verify login or landing flow
+4. Browse to home and product detail
+5. Add a product to cart
+6. Change cart quantity
+7. Close and reopen the app
+8. Confirm cart item and quantity persist
+9. Verify checkout/order-history screen
+10. Verify admin login and dashboard
+11. Verify at least one admin management screen
 
----
+## 14. Web Manual Testing Plan
 
-## 7. Integration Test Plan
+1. Run `flutter run -d chrome`
+2. Open ShopEase in Chrome
+3. Verify login or landing flow
+4. Browse to home and product detail
+5. Add a product to cart
+6. Change cart quantity
+7. Refresh the browser
+8. Confirm cart item and quantity persist
+9. Verify checkout/order-history screen
+10. Verify admin login and dashboard
+11. Verify at least one admin management screen
 
-Integration tests should validate true cross-boundary behavior:
+## 15. Planned Evidence Outputs
 
-```text
-UI -> Provider -> Navigation -> Firebase Auth / Firestore emulator -> UI/data assertion
-```
+- Flutter environment logs
+- analyze/test execution logs
+- Android integration smoke log
+- Chrome integration blocker log
+- Android screenshots
+- Web screenshots
+- final evidence index mapping each artifact to assignment requirements
 
-### Current production-scope flows
+## 16. Planned Exit Deliverables
 
-| Flow | Status |
-|---|---|
-| Customer Auth Flow | Implemented |
-| Golden Path: Browse -> Product Detail -> Add to Cart -> Checkout -> Order Creation | Implemented |
-| Admin Login Flow | Implemented |
-| Admin Product Management Flow | Implemented |
-| Admin Order Management Flow | Implemented |
-| Admin Category Management Flow | Implemented |
-| Admin Bank Details Management Flow | Implemented |
-| Wishlist Persistence Flow | Implemented |
-| Profile Update Flow | Implemented |
+Final instructor-facing documents:
 
-Order Tracking is not part of the current production-scope target.
-
-### Expected commands
-
-```powershell
-firebase emulators:start --only auth,firestore
-flutter test test\integration\phase1 test\integration\phase2
-```
-
-### Current evidence
-
-The integration test files exist, but the audit command timed out locally and did not produce passing integration execution evidence. The integration implementation supplement also records prior local Firebase plugin/platform-channel initialization blockers.
-
----
-
-## 8. Requirement Mapping Plan
-
-| Requirement | Planned validation layer |
-|---|---|
-| R1 Authentication | Unit provider tests, widget auth forms, integration customer/admin auth flows |
-| R2 Navigation | Widget route/navigation tests, integration multi-screen flows |
-| R3 Cross-Platform Execution | CLI commands plus Android/Web execution evidence when available |
-| R4 Data Storage | Unit fake Firebase tests plus integration Firestore/Auth emulator assertions |
-| R5 CLI Testability | `flutter test` commands for unit, widget, and integration test groups |
-
----
-
-## 9. Black-Box Test Design Plan
-
-### Equivalence Partitioning
-
-- Valid/invalid authentication input.
-- Valid/invalid admin form input.
-- Empty/non-empty cart and wishlist states.
-- COD/bank-transfer payment options.
-- Existing/non-existing Firestore records.
-
-### Boundary Value Analysis
-
-- Password minimum length.
-- Cart quantity at 1 and 0.
-- Rating bounds of 1.0 and 5.0.
-- Empty strings for required form fields.
-- Order status first/last/unknown values.
-
----
-
-## 10. Evidence and Reporting Rules
-
-Documentation must use the following language precisely:
-
-- **Implemented:** test files or logic exist.
-- **Executed successfully:** command output confirms pass.
-- **Execution attempted but blocked:** command was run but environment/runtime prevented completion.
-- **Planned only:** described but not implemented.
-- **No direct evidence found:** no repository or command evidence supports the claim.
-
-The final SEA606 report must not convert implemented integration coverage into executed integration coverage unless successful command output is added.
-
----
-
-## 11. Open Evidence Gaps
-
-- Successful integration-test execution output.
-- Android execution evidence.
-- Web execution evidence.
-- Empirical performance measurements.
-- Workshop/usability observation notes.
-- Firebase Security Rules test evidence.
-
----
-
-## 12. Relationship to Other Documents
-
-- `test/TESTING_REPORT.md` is the authoritative final report.
-- `test/INTEGRATION_TEST_PLAN.md` provides integration-specific planning detail.
-- `test/INTEGRATION_TEST_IMPLEMENTATION_REPORT.md` records integration implementation files, scope, and blockers.
-- Admin widget repair documents are historical defect/repair evidence.
+- `README.md`
+- `TECHNICAL_REPORT.md`
+- `TESTING_PLAN.md`
+- `TESTING_REPORT.md`
+- `SUBMISSION_EVIDENCE_INDEX.md`
