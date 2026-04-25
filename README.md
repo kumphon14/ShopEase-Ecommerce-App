@@ -1,6 +1,9 @@
 # ShopEase Ecommerce
 
 ShopEase is a cross-platform Flutter + Firebase e-commerce application developed for the SEA606 coursework. The system supports customer shopping workflows, admin management workflows, cloud-backed shared data, and device-local cart persistence.
+<img width="1920" height="1080" alt="image" src="https://github.com/kumphon14/ShopEase-Ecommerce-App/blob/main/docs/internal/app_design_1.png?raw=true" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/kumphon14/ShopEase-Ecommerce-App/blob/main/docs/internal/app_design_2.png?raw=true" />
 
 ## Project Overview
 
