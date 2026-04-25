@@ -2,87 +2,120 @@
 
 ## Purpose
 
-This folder contains the current production-scope integration tests for ShopEase. The tests are designed to drive the real Flutter UI, Provider graph, named routes, Firebase Auth, and Cloud Firestore through the Firebase Local Emulator Suite.
+This folder contains the source scenario files, helpers, fixtures, and deterministic seed utilities for the ShopEase integration layer.
 
-Current documentation status:
+The actual Flutter entry points used by the `integration_test` plugin now live under:
 
-- Test files are implemented for all current production-scope integration flows.
-- Successful local execution evidence was not produced during the 2026-04-23 documentation audit because the integration command timed out.
-- Order Tracking is intentionally outside the current production scope and is not included.
+- `integration_test/`
 
-## Folder Structure
+That split is intentional:
 
-- `helpers/` - app bootstrap, emulator configuration, deterministic seeding, auth/customer/admin flow helpers, stable test keys, and explicit waits.
-- `fixtures/` - reference fixture folders for users, products, categories, and payments.
-- `phase1/` - initial critical customer/admin paths.
-- `phase2/` - remaining current production-scope paths.
+- `test/integration/` keeps the scenario logic organized by phase
+- `integration_test/` provides standard device-backed entry points so Flutter loads the integration plugin correctly
+
+Order Tracking is intentionally outside the current production scope and is not included.
+
+## Execution Structure
+
+- `test/integration/helpers/` - bootstrap, emulator config, seeding, wait helpers, auth/admin/customer helpers, stable keys
+- `test/integration/phase1/` - source files for Customer Auth, Golden Path, Admin Login, Admin Product Management
+- `test/integration/phase2/` - source files for Admin Order Management, Admin Category Management, Admin Bank Details, Wishlist Persistence, Profile Update
+- `integration_test/app_smoke_test.dart` - smoke test that proves plugin loading, Firebase initialization, app launch, splash transition, and landing screen rendering
+- `integration_test/phase1_suite_test.dart` - opt-in wrapper for full Phase 1 emulator-backed suites
+- `integration_test/phase2_suite_test.dart` - opt-in wrapper for full Phase 2 emulator-backed suites
 
 ## Current Flow Coverage
 
-| Folder | Flow | File |
-|---|---|---|
-| `phase1/` | Customer Auth | `customer_auth_flow_test.dart` |
-| `phase1/` | Golden Path: Browse -> Product Detail -> Add to Cart -> Checkout -> Order Creation | `golden_path_browse_cart_checkout_order_test.dart` |
-| `phase1/` | Admin Login | `admin_login_flow_test.dart` |
-| `phase1/` | Admin Product Management | `admin_add_product_flow_test.dart` |
-| `phase2/` | Admin Order Management | `admin_order_management_flow_test.dart` |
-| `phase2/` | Admin Category Management | `admin_category_management_flow_test.dart` |
-| `phase2/` | Admin Bank Details Management | `admin_bank_details_flow_test.dart` |
-| `phase2/` | Wishlist Persistence | `wishlist_persistence_flow_test.dart` |
-| `phase2/` | Profile Update | `profile_update_flow_test.dart` |
+| Flow | Source file |
+|---|---|
+| Customer Auth | `test/integration/phase1/customer_auth_flow_test.dart` |
+| Golden Path: Browse -> Product Detail -> Add to Cart -> Checkout -> Order Creation | `test/integration/phase1/golden_path_browse_cart_checkout_order_test.dart` |
+| Admin Login | `test/integration/phase1/admin_login_flow_test.dart` |
+| Admin Product Management | `test/integration/phase1/admin_add_product_flow_test.dart` |
+| Admin Order Management | `test/integration/phase2/admin_order_management_flow_test.dart` |
+| Admin Category Management | `test/integration/phase2/admin_category_management_flow_test.dart` |
+| Admin Bank Details Management | `test/integration/phase2/admin_bank_details_flow_test.dart` |
+| Wishlist Persistence | `test/integration/phase2/wishlist_persistence_flow_test.dart` |
+| Profile Update | `test/integration/phase2/profile_update_flow_test.dart` |
 
 ## Emulator Assumptions
 
-- Firestore emulator defaults to `localhost:8080`.
-- Firebase Auth emulator defaults to `localhost:9099`.
-- Android emulator runs should pass `--dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2`.
-- The runner must load Flutter plugins correctly for Firebase platform channels.
+- Firestore emulator default: `localhost:8080`
+- Firebase Auth emulator default: `localhost:9099`
+- Android emulator host override: `10.0.2.2`
+- Full business-flow suites require Firebase emulators to already be running
 
-Start emulators before running integration tests:
-
-```powershell
-firebase emulators:start --only auth,firestore
-```
+The audit environment did not include `firebase` CLI, so emulator startup was not automated locally.
 
 ## Seeding Strategy
 
-Each test resets known Firestore collections, clears the known wishlist subcollection group, and seeds deterministic baseline catalog/payment data through `helpers/seed_test_data.dart`.
+The source scenario files use `helpers/seed_test_data.dart` to:
 
-Tests create or reuse Auth emulator accounts by stable email, then rewrite Firestore user documents for deterministic roles and profile data. Seeded orders are written directly to Firestore when a flow requires existing order state.
+- sign out any existing user
+- reset known Firestore collections
+- clear the known wishlist collection group
+- seed deterministic categories, products, payment settings, and orders
+- create or reuse deterministic Auth emulator accounts
+- rewrite Firestore user documents for stable roles/profile values
 
-## Run All Integration Tests
-
-```powershell
-flutter test test/integration/phase1 test/integration/phase2
-```
-
-## Run Phase 1 Only
-
-```powershell
-flutter test test/integration/phase1
-```
-
-## Run Phase 2 Only
+## Standard Android Run
 
 ```powershell
-flutter test test/integration/phase2
+flutter test integration_test -d emulator-5554
 ```
 
-## Android Emulator Example
+Current verified result:
+
+- smoke integration passed
+- standard wrappers loaded correctly
+- no `integration_test` plugin detection failure
+- no `FirebaseCoreHostApi.initializeCore` startup failure
+
+## Full Phase 1 Android Run
 
 ```powershell
-flutter test test/integration/phase1 test/integration/phase2 --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2
+flutter test integration_test\phase1_suite_test.dart -d emulator-5554 --dart-define=RUN_FULL_INTEGRATION=true --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2
 ```
+
+## Full Phase 2 Android Run
+
+```powershell
+flutter test integration_test\phase2_suite_test.dart -d emulator-5554 --dart-define=RUN_FULL_INTEGRATION=true --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2
+```
+
+## Web Notes
+
+For this Flutter toolchain:
+
+```powershell
+flutter test integration_test -d chrome
+```
+
+is not supported. The tool returns:
+
+```text
+Web devices are not supported for integration tests yet.
+```
+
+Use `flutter drive` instead:
+
+```powershell
+flutter drive --driver=test_driver\integration_test.dart --target=integration_test\app_smoke_test.dart -d chrome
+```
+
+That command additionally requires a running WebDriver server such as `chromedriver` on port `4444`.
 
 ## Troubleshooting
 
-- Use `waitUntilVisible` and `tapWhenVisible` instead of arbitrary delays.
-- If Firestore-driven UI does not update, confirm the emulator is running and the host/port dart defines match the target device.
-- Existing Auth emulator users are reused by email; this is expected during repeated local runs.
-- Network images are not assertion targets. Tests assert product/category/order/payment/profile text and Firestore state.
-- If `flutter test` reports that the `integration_test` plugin was not detected or Firebase cannot initialize `FirebaseCoreHostApi`, run the suite through a device-backed integration test configuration that loads Flutter plugins for the `test/integration` targets.
-- If the command hangs or times out, verify emulator availability, device discovery, Firebase platform-channel initialization, and PowerShell profile behavior separately.
+- If you see `integration_test plugin was not detected`, run the standard files under `integration_test/` on a device-backed target.
+- If you see `FirebaseCoreHostApi.initializeCore` failures during startup, confirm you are no longer running the old `test/integration/...` directories directly as plain Flutter tests.
+- If the full phase suites hang or time out, check Firebase emulator availability first.
+- If Chrome `flutter drive` fails, verify that a compatible WebDriver server is already running.
+- Prefer explicit wait helpers over arbitrary delays.
 
-## Current Scope Note
+## Current Status Summary
 
-Order Tracking is intentionally outside the current production scope. The production app currently exposes Order History but not an order tracking screen, route, or navigation path, so no integration test is required or included for Order Tracking.
+- Android smoke execution: verified
+- Full seeded business-flow suites: implemented, opt-in, not fully execution-verified in this audit
+- Chrome standard command: blocked by Flutter web limitation
+- Chrome `flutter drive`: blocked in this audit because WebDriver was not running

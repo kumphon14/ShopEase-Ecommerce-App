@@ -1,7 +1,6 @@
 // test/widget/cart/cart_screen_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shopease_ecommerce_app/models/cart_item.dart';
 import 'package:shopease_ecommerce_app/screens/cart/cart_screen.dart';
 import 'package:shopease_ecommerce_app/widgets/custom_button.dart';
 
@@ -13,32 +12,45 @@ void main() {
     // ------------------------------------------------------------------
     // Empty cart state
     // ------------------------------------------------------------------
-    testWidgets('renders empty cart message when cart is empty', (tester) async {
+    testWidgets('renders empty cart message when cart is empty', (
+      tester,
+    ) async {
       await tester.pumpApp(const CartScreen());
       expect(find.text('Your cart is empty'), findsOneWidget);
     });
 
-    testWidgets('renders Continue Shopping button when cart is empty', (tester) async {
+    testWidgets('renders Continue Shopping button when cart is empty', (
+      tester,
+    ) async {
       await tester.pumpApp(const CartScreen());
       expect(find.text('Continue Shopping'), findsOneWidget);
     });
 
-    testWidgets('does not show checkout button when cart is empty', (tester) async {
+    testWidgets('does not show checkout button when cart is empty', (
+      tester,
+    ) async {
       await tester.pumpApp(const CartScreen());
-      expect(find.widgetWithText(CustomButton, 'Proceed to Checkout'), findsNothing);
+      expect(
+        find.widgetWithText(CustomButton, 'Proceed to Checkout'),
+        findsNothing,
+      );
     });
 
     // ------------------------------------------------------------------
     // Non-empty cart state
     // ------------------------------------------------------------------
-    testWidgets('renders product name in cart when cart has items', (tester) async {
+    testWidgets('renders product name in cart when cart has items', (
+      tester,
+    ) async {
       final product = makeProduct(name: 'Widget Pro');
       final cart = makeCartProvider([makeCartItem(product: product)]);
       await tester.pumpApp(const CartScreen(), cart: cart);
       expect(find.text('Widget Pro'), findsOneWidget);
     });
 
-    testWidgets('renders Proceed to Checkout button when cart has items', (tester) async {
+    testWidgets('renders Proceed to Checkout button when cart has items', (
+      tester,
+    ) async {
       final cart = makeCartProvider([makeCartItem()]);
       await tester.pumpApp(const CartScreen(), cart: cart);
       expect(
@@ -47,7 +59,9 @@ void main() {
       );
     });
 
-    testWidgets('renders Clear All action when cart is not empty', (tester) async {
+    testWidgets('renders Clear All action when cart is not empty', (
+      tester,
+    ) async {
       final cart = makeCartProvider([makeCartItem()]);
       await tester.pumpApp(const CartScreen(), cart: cart);
       expect(find.text('Clear All'), findsOneWidget);
@@ -88,7 +102,10 @@ void main() {
 
     testWidgets('shows correct item count in total area', (tester) async {
       final cart = makeCartProvider([
-        makeCartItem(id: 'ci1', product: makeProduct(id: 'p1')),
+        makeCartItem(
+          id: 'ci1',
+          product: makeProduct(id: 'p1'),
+        ),
       ]);
       await tester.pumpApp(const CartScreen(), cart: cart);
       expect(find.textContaining('item(s)'), findsOneWidget);
@@ -110,11 +127,19 @@ void main() {
     // ------------------------------------------------------------------
     // Navigation
     // ------------------------------------------------------------------
-    testWidgets('tapping Proceed to Checkout navigates to checkout', (tester) async {
+    testWidgets('tapping Proceed to Checkout navigates to checkout', (
+      tester,
+    ) async {
       final observer = _TestNavigatorObserver();
       final cart = makeCartProvider([makeCartItem()]);
-      await tester.pumpApp(const CartScreen(), cart: cart, observers: [observer]);
-      await tester.tap(find.widgetWithText(CustomButton, 'Proceed to Checkout'));
+      await tester.pumpApp(
+        const CartScreen(),
+        cart: cart,
+        observers: [observer],
+      );
+      await tester.tap(
+        find.widgetWithText(CustomButton, 'Proceed to Checkout'),
+      );
       await tester.pump();
       expect(observer.pushedRoutes.isNotEmpty, isTrue);
     });

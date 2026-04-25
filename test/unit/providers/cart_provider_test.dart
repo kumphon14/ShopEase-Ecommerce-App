@@ -1,7 +1,11 @@
-// test/unit/providers/cart_provider_test.dart
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shopease_ecommerce_app/services/providers/cart_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shopease_ecommerce_app/models/local_cart_item.dart';
 import 'package:shopease_ecommerce_app/models/product.dart';
+import 'package:shopease_ecommerce_app/services/local/local_cart_storage_service.dart';
+import 'package:shopease_ecommerce_app/services/providers/cart_provider.dart';
 
 Product _makeProduct({
   String id = 'p1',
@@ -21,9 +25,18 @@ Product _makeProduct({
 void main() {
   group('CartProvider', () {
     late CartProvider cart;
+    late FakeFirebaseFirestore fakeFirestore;
+    late MockFirebaseAuth fakeAuth;
 
     setUp(() {
-      cart = CartProvider();
+      SharedPreferences.setMockInitialValues({});
+      fakeFirestore = FakeFirebaseFirestore();
+      fakeAuth = MockFirebaseAuth();
+      cart = CartProvider(
+        firestore: fakeFirestore,
+        auth: fakeAuth,
+        localCartStorageService: LocalCartStorageService(),
+      );
     });
 
     group('initial state', () {
@@ -82,14 +95,17 @@ void main() {
         expect(cart.totalAmount, equals(50.0));
       });
 
-      test('totalAmount is sum of both products after adding two distinct products', () {
-        final productA = _makeProduct(id: 'p1', price: 10.0);
-        final productB = _makeProduct(id: 'p2', price: 20.0);
-        cart.addItem(productA);
-        cart.addItem(productB);
+      test(
+        'totalAmount is sum of both products after adding two distinct products',
+        () {
+          final productA = _makeProduct(id: 'p1', price: 10.0);
+          final productB = _makeProduct(id: 'p2', price: 20.0);
+          cart.addItem(productA);
+          cart.addItem(productB);
 
-        expect(cart.totalAmount, equals(30.0));
-      });
+          expect(cart.totalAmount, equals(30.0));
+        },
+      );
 
       test('totalAmount stays 0.0 when product price is 0.0', () {
         final product = _makeProduct(price: 0.0);
@@ -113,17 +129,20 @@ void main() {
         expect(cart.itemCount, equals(0));
       });
 
-      test('only removes the target product, leaving other products intact', () {
-        final productA = _makeProduct(id: 'p1');
-        final productB = _makeProduct(id: 'p2');
-        cart.addItem(productA);
-        cart.addItem(productB);
+      test(
+        'only removes the target product, leaving other products intact',
+        () {
+          final productA = _makeProduct(id: 'p1');
+          final productB = _makeProduct(id: 'p2');
+          cart.addItem(productA);
+          cart.addItem(productB);
 
-        cart.removeItem(productA.id);
+          cart.removeItem(productA.id);
 
-        expect(cart.itemCount, equals(1));
-        expect(cart.items.containsKey(productB.id), isTrue);
-      });
+          expect(cart.itemCount, equals(1));
+          expect(cart.items.containsKey(productB.id), isTrue);
+        },
+      );
     });
 
     group('updateQuantity', () {
@@ -139,7 +158,7 @@ void main() {
       test('sets quantity to 1', () {
         final product = _makeProduct();
         cart.addItem(product);
-        cart.addItem(product); // quantity = 2
+        cart.addItem(product);
         cart.updateQuantity(product.id, 1);
 
         expect(cart.items[product.id]!.quantity, equals(1));
@@ -185,18 +204,20 @@ void main() {
     });
 
     group('totalAmount', () {
-      test('calculates correct total across multiple products and quantities', () {
-        // p1: price=10 x2 = 20, p2: price=15 x3 = 45 → total = 65
-        final productA = _makeProduct(id: 'p1', price: 10.0);
-        final productB = _makeProduct(id: 'p2', price: 15.0);
-        cart.addItem(productA);
-        cart.addItem(productA);
-        cart.addItem(productB);
-        cart.addItem(productB);
-        cart.addItem(productB);
+      test(
+        'calculates correct total across multiple products and quantities',
+        () {
+          final productA = _makeProduct(id: 'p1', price: 10.0);
+          final productB = _makeProduct(id: 'p2', price: 15.0);
+          cart.addItem(productA);
+          cart.addItem(productA);
+          cart.addItem(productB);
+          cart.addItem(productB);
+          cart.addItem(productB);
 
-        expect(cart.totalAmount, equals(65.0));
-      });
+          expect(cart.totalAmount, equals(65.0));
+        },
+      );
 
       test('handles mix of zero and non-zero priced products', () {
         final freeProduct = _makeProduct(id: 'p_free', price: 0.0);
@@ -212,10 +233,10 @@ void main() {
       test('reflects distinct product count, not total quantity', () {
         final product = _makeProduct();
         cart.addItem(product);
-        cart.addItem(product); // same product, quantity = 2
-        cart.addItem(product); // same product, quantity = 3
+        cart.addItem(product);
+        cart.addItem(product);
 
-        expect(cart.itemCount, equals(1)); // 1 distinct product
+        expect(cart.itemCount, equals(1));
       });
 
       test('returns 10 after adding 10 distinct products', () {
@@ -227,16 +248,124 @@ void main() {
     });
 
     group('items getter (defensive copy)', () {
-      test('returned map is a copy — mutating it does not affect provider state', () {
-        final product = _makeProduct();
-        cart.addItem(product);
+      test(
+        'returned map is a copy and mutating it does not affect provider state',
+        () {
+          final product = _makeProduct();
+          cart.addItem(product);
 
-        final itemsCopy = cart.items;
-        itemsCopy.remove(product.id); // mutate the copy
+          final itemsCopy = cart.items;
+          itemsCopy.remove(product.id);
 
-        // Provider internal state should be unaffected
-        expect(cart.itemCount, equals(1));
+          expect(cart.itemCount, equals(1));
+        },
+      );
+    });
+
+    group('local persistence', () {
+      late LocalCartStorageService storageService;
+
+      setUp(() {
+        SharedPreferences.setMockInitialValues({});
+        fakeFirestore = FakeFirebaseFirestore();
+        fakeAuth = MockFirebaseAuth();
+        storageService = LocalCartStorageService();
       });
+
+      Future<void> seedProduct(Product product) async {
+        await fakeFirestore.collection('products').doc(product.id).set({
+          'name': product.name,
+          'description': product.description,
+          'price': product.price,
+          'imageUrl': product.imageUrl,
+          'categoryId': product.categoryId,
+          'isFeatured': product.isFeatured,
+          'rating': product.rating,
+          'admin_rating': product.rating,
+        });
+      }
+
+      test('persists added cart item for guest storage key', () async {
+        final product = _makeProduct(id: 'persist_guest');
+        await seedProduct(product);
+
+        final provider = CartProvider(
+          firestore: fakeFirestore,
+          auth: fakeAuth,
+          localCartStorageService: storageService,
+        );
+
+        provider.addItem(product);
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+
+        final stored = await storageService.loadCartItems();
+        expect(stored.length, equals(1));
+        expect(stored.first.productId, equals(product.id));
+        expect(stored.first.quantity, equals(1));
+      });
+
+      test('persists quantity updates', () async {
+        final product = _makeProduct(id: 'persist_quantity');
+        await seedProduct(product);
+
+        final provider = CartProvider(
+          firestore: fakeFirestore,
+          auth: fakeAuth,
+          localCartStorageService: storageService,
+        );
+
+        provider.addItem(product);
+        provider.updateQuantity(product.id, 4);
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+
+        final stored = await storageService.loadCartItems();
+        expect(stored.single.productId, equals(product.id));
+        expect(stored.single.quantity, equals(4));
+      });
+
+      test('clears persisted cart when cart is cleared', () async {
+        final product = _makeProduct(id: 'persist_clear');
+        await seedProduct(product);
+
+        final provider = CartProvider(
+          firestore: fakeFirestore,
+          auth: fakeAuth,
+          localCartStorageService: storageService,
+        );
+
+        provider.addItem(product);
+        provider.clear();
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+
+        final stored = await storageService.loadCartItems();
+        expect(stored, isEmpty);
+      });
+
+      test(
+        'restores persisted cart items from local storage and Firestore',
+        () async {
+          final product = _makeProduct(id: 'persist_restore', price: 55.0);
+          await seedProduct(product);
+          await storageService.saveCartItems([
+            LocalCartItem(
+              productId: product.id,
+              quantity: 3,
+              updatedAt: DateTime.now(),
+            ),
+          ]);
+
+          final provider = CartProvider(
+            firestore: fakeFirestore,
+            auth: fakeAuth,
+            localCartStorageService: storageService,
+          );
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(provider.itemCount, equals(1));
+          expect(provider.items[product.id]!.quantity, equals(3));
+          expect(provider.totalAmount, equals(165.0));
+        },
+      );
     });
   });
 }

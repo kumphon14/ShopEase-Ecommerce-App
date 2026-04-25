@@ -1,0 +1,7 @@
+Before creating the final ZIP:
+- Run flutter clean
+- Exclude build/
+- Exclude .dart_tool/
+- Exclude .idea/ and other IDE caches
+- Verify screenshots are added to submission_evidence/android and submission_evidence/web if required by the instructor
+- Confirm Firebase config files included are intentional for course submission

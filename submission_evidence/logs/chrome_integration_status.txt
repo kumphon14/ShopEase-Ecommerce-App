@@ -1,0 +1,15 @@
+﻿=== flutter test integration_test -d chrome ===
+Result: Blocked
+Exact blocker: Web devices are not supported for integration tests yet.
+Interpretation: This Flutter toolchain does not support web targets through `flutter test integration_test`.
+
+=== flutter drive --driver=test_driver\integration_test.dart --target=integration_test\app_smoke_test.dart -d chrome ===
+Result: Blocked
+Exact blocker: Unable to start a WebDriver session for web testing.
+Additional message: Make sure you have the correct WebDriver server (e.g. chromedriver) running at 4444.
+Interpretation: Chrome smoke execution still requires an external WebDriver server before it can be verified.
+
+Recommended manual steps:
+1. Start ChromeDriver or another compatible WebDriver server on port 4444.
+2. Rerun `flutter drive --driver=test_driver\integration_test.dart --target=integration_test\app_smoke_test.dart -d chrome`.
+3. Capture screenshots and keep this log as the non-image evidence reference.

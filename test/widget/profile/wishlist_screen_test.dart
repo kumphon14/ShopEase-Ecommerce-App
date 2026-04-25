@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shopease_ecommerce_app/screens/profile/wishlist_screen.dart';
 
-import '../helpers/fake_providers.dart';
 import '../helpers/pump_app.dart';
 
 void main() {
@@ -16,17 +15,23 @@ void main() {
       expect(find.text('My Wishlist'), findsOneWidget);
     });
 
-    testWidgets('renders No saved items yet when wishlist is empty', (tester) async {
+    testWidgets('renders No saved items yet when wishlist is empty', (
+      tester,
+    ) async {
       await tester.pumpApp(const WishlistScreen());
       expect(find.text('No saved items yet'), findsOneWidget);
     });
 
-    testWidgets('renders Browse Products button when wishlist is empty', (tester) async {
+    testWidgets('renders Browse Products button when wishlist is empty', (
+      tester,
+    ) async {
       await tester.pumpApp(const WishlistScreen());
       expect(find.text('Browse Products'), findsOneWidget);
     });
 
-    testWidgets('does not show Clear button when wishlist is empty', (tester) async {
+    testWidgets('does not show Clear button when wishlist is empty', (
+      tester,
+    ) async {
       await tester.pumpApp(const WishlistScreen());
       expect(find.text('Clear'), findsNothing);
     });

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shopease_ecommerce_app/screens/admin/admin_dashboard_screen.dart';
 
-import '../helpers/fake_providers.dart';
 import '../helpers/pump_app.dart';
 
 void main() {

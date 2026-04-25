@@ -1,78 +1,98 @@
 # Integration Test Implementation Report
 
 **Project:** ShopEase  
-**Document role:** Integration-specific implementation and evidence supplement  
-**Audit date:** 2026-04-23  
+**Document role:** Integration-specific implementation and execution supplement  
+**Audit date:** 2026-04-24  
 **Master report:** `test/TESTING_REPORT.md`
 
 ---
 
 ## 1. Summary
 
-The ShopEase integration layer is implemented under `test/integration/` for the full current production scope. The tests are structured to drive the real Flutter UI, Provider graph, named routes, Firebase Auth, and Cloud Firestore emulator-backed state.
+The ShopEase integration layer is implemented for the full current production scope. The original business-flow scenario files remain under `test/integration/`, and standard Flutter device-backed entry points now exist under `integration_test/`.
 
-Execution status must be stated conservatively: the tests are implemented, but this audit did not produce successful integration execution evidence. Local integration execution timed out, and prior project evidence records Firebase plugin/platform-channel initialization blockers.
+This resolves the earlier structural execution blocker:
 
-Order Tracking is intentionally out of current production scope. No order tracking production feature, route, navigation path, or integration test was added or restored.
+- scenario files were previously being run outside the standard `integration_test` plugin-loading path
+- that led to prior failures such as `integration_test` plugin detection issues and Firebase platform-channel initialization problems
+
+Current execution status is now more precise:
+
+- Android smoke integration is execution-verified
+- standard Android wrappers load correctly
+- full emulator-backed business-flow suites remain environment-dependent and were not fully execution-verified in this audit
+- Chrome standard command is blocked by Flutter toolchain limitations for web integration tests
+- Chrome `flutter drive` fallback still needs external WebDriver setup
+
+Order Tracking remains intentionally out of current production scope.
 
 ---
 
 ## 2. Files Created
 
-Current integration implementation includes these phase 2 flow files:
+Standard integration entry points added for execution stability:
 
+- `integration_test/app_smoke_test.dart`
+- `integration_test/phase1_suite_test.dart`
+- `integration_test/phase2_suite_test.dart`
+- `integration_test/helpers/full_suite_mode.dart`
+- `test_driver/integration_test.dart`
+
+Existing source scenario files:
+
+- `test/integration/phase1/customer_auth_flow_test.dart`
+- `test/integration/phase1/golden_path_browse_cart_checkout_order_test.dart`
+- `test/integration/phase1/admin_login_flow_test.dart`
+- `test/integration/phase1/admin_add_product_flow_test.dart`
 - `test/integration/phase2/admin_order_management_flow_test.dart`
 - `test/integration/phase2/admin_category_management_flow_test.dart`
 - `test/integration/phase2/admin_bank_details_flow_test.dart`
 - `test/integration/phase2/wishlist_persistence_flow_test.dart`
 - `test/integration/phase2/profile_update_flow_test.dart`
 
-Existing phase 1 integration files:
-
-- `test/integration/phase1/customer_auth_flow_test.dart`
-- `test/integration/phase1/golden_path_browse_cart_checkout_order_test.dart`
-- `test/integration/phase1/admin_login_flow_test.dart`
-- `test/integration/phase1/admin_add_product_flow_test.dart`
-
 ---
 
 ## 3. Files Updated
 
-Integration support and documentation files currently relevant to this layer include:
-
 - `test/integration/README.md`
-- `test/integration/helpers/integration_test_bootstrap.dart`
-- `test/integration/helpers/test_app_wrapper.dart`
-- `test/integration/helpers/emulator_config.dart`
-- `test/integration/helpers/seed_test_data.dart`
-- `test/integration/helpers/auth_test_helper.dart`
-- `test/integration/helpers/customer_flow_helper.dart`
-- `test/integration/helpers/admin_flow_helper.dart`
-- `test/integration/helpers/wait_utils.dart`
-- `test/integration/helpers/test_keys.dart`
-- `test/INTEGRATION_TEST_PLAN.md`
 - `test/INTEGRATION_TEST_IMPLEMENTATION_REPORT.md`
+- `test/INTEGRATION_TEST_PLAN.md`
 - `test/TESTING_REPORT.md`
-
-Prior implementation work also documented minimal production testability changes for stable keys. This documentation audit did not modify production or test source code.
+- `TECHNICAL_REPORT.md`
 
 ---
 
-## 4. Newly Implemented Flows
+## 4. Root Cause and Fix
 
-| Flow | Implemented behavior |
-|---|---|
-| Admin Order Management | Admin updates a seeded order from `Order Placed` to `Confirmed`, verifies admin UI, Firestore persistence, and customer Order History reflection |
-| Admin Category Management | Admin adds a category, verifies admin list, Firestore persistence, and customer category UI reflection |
-| Admin Bank Details Management | Admin updates bank/payment details, verifies reopened admin form, Firestore persistence, and checkout bank-transfer UI reflection |
-| Wishlist Persistence | Customer adds a product to wishlist, verifies Firestore/UI presence, removes it, and verifies Firestore/UI removal |
-| Profile Update | Customer updates supported profile fields, verifies Profile UI and Firestore persistence for name, phone, and address |
+### Root Cause
+
+The earlier integration failures came from two overlapping issues:
+
+1. The meaningful scenario files lived under `test/integration/` instead of standard `integration_test/`.
+2. Those files were therefore being run in a path where Flutter was not loading the integration plugin the way device-backed integration tests expect.
+
+That explains the earlier symptoms:
+
+- `integration_test plugin was not detected`
+- `PlatformException` / `FirebaseCoreHostApi.initializeCore`
+
+### Fix
+
+The fix was intentionally small and test-harness focused:
+
+- keep the real scenario files under `test/integration/`
+- add standard wrappers under `integration_test/`
+- add an Android-safe smoke test that proves plugin loading and Firebase initialization
+- add a `test_driver/integration_test.dart` bridge for Chrome `flutter drive`
+- keep the full seeded business suites opt-in behind `RUN_FULL_INTEGRATION=true`
+
+No production business logic was changed.
 
 ---
 
 ## 5. Current Production-Scope Integration Coverage
 
-Implemented in integration test code:
+Implemented flows:
 
 - Customer Auth Flow
 - Golden Path: Browse -> Product Detail -> Add to Cart -> Checkout -> Order Creation
@@ -84,110 +104,111 @@ Implemented in integration test code:
 - Wishlist Persistence Flow
 - Profile Update Flow
 
-Intentionally out of current production scope:
+Out of scope:
 
 - Order Tracking
 
 ---
 
-## 6. Minimal Production Changes for Testability
+## 6. Test Environment / Emulator Assumptions
 
-Prior implementation documentation records stable-key additions to support deterministic finders. These were described as testability-only changes, not business-logic changes.
-
-Documented key areas:
-
-- Admin order cards and status actions.
-- Admin category dialog fields and category list tiles.
-- Product detail wishlist action.
-- Wishlist product cards.
-- Edit profile fields.
-- Earlier phase 1 keys for shared fields, product cards, bottom navigation, cart actions, and order history tiles.
-
-This documentation audit did not change any production file.
+- Full business-flow suites assume Firebase Auth and Firestore emulators are running
+- Firestore emulator default: `localhost:8080`
+- Auth emulator default: `localhost:9099`
+- Android emulator host override: `10.0.2.2`
+- The local audit environment did not provide `firebase` CLI, so emulator startup was not automated
 
 ---
 
-## 7. Test Environment / Emulator Assumptions
+## 7. How to Run the Integration Tests
 
-- Firebase Local Emulator Suite is required.
-- Firestore emulator defaults to `localhost:8080`.
-- Firebase Auth emulator defaults to `localhost:9099`.
-- Android emulator runs should pass `--dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2`.
-- Tests reset known Firestore collections before each run.
-- Tests clear the known wishlist subcollection group to prevent persisted wishlist entries from leaking between runs.
-- Auth emulator users may be reused by deterministic email if already present.
-- A device-backed/plugin-ready Flutter test runner is required for Firebase platform channels.
-
----
-
-## 8. How to Run All Integration Tests
+### Standard Android Smoke / Harness Verification
 
 ```powershell
-firebase emulators:start --only auth,firestore
-flutter test test\integration\phase1 test\integration\phase2
+flutter test integration_test -d emulator-5554
+```
+
+### Full Phase 1 Suite
+
+```powershell
+flutter test integration_test\phase1_suite_test.dart -d emulator-5554 --dart-define=RUN_FULL_INTEGRATION=true --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2
+```
+
+### Full Phase 2 Suite
+
+```powershell
+flutter test integration_test\phase2_suite_test.dart -d emulator-5554 --dart-define=RUN_FULL_INTEGRATION=true --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2
+```
+
+### Chrome Fallback
+
+```powershell
+flutter drive --driver=test_driver\integration_test.dart --target=integration_test\app_smoke_test.dart -d chrome
 ```
 
 ---
 
-## 9. How to Run Only Phase 1 Tests
+## 8. Execution Evidence
 
-```powershell
-flutter test test\integration\phase1
-```
+### Verified
 
----
+| Command | Result |
+|---|---|
+| `flutter test integration_test -d emulator-5554` | Passed |
 
-## 10. How to Run Only Newly Added Remaining Flows
+Evidence from the successful Android run:
 
-```powershell
-flutter test test\integration\phase2
-```
+- app smoke test passed
+- `phase1_suite_test.dart` loaded without plugin/Firebase startup crash
+- `phase2_suite_test.dart` loaded without plugin/Firebase startup crash
 
----
+### Blocked
 
-## 11. Known Limitations / Risks
-
-- This audit did not obtain a successful integration-test run.
-- The current audit command timed out twice when running `test/integration/phase1` and `test/integration/phase2` together.
-- Prior project-local evidence records Firebase platform-channel/plugin initialization failure (`FirebaseCoreHostApi.initializeCore` / `integration_test` plugin detection).
-- The Firebase client SDK cannot bulk-delete Auth emulator users from inside the app process, so helpers reuse stable test accounts.
-- Network image loading is not asserted.
-- Some production admin actions trigger asynchronous provider writes; tests wait on Firestore state to avoid same-frame assertions.
+| Command | Result | Reason |
+|---|---|---|
+| `flutter test integration_test -d chrome` | Blocked | Flutter toolchain message: `Web devices are not supported for integration tests yet.` |
+| `flutter drive --driver=test_driver\integration_test.dart --target=integration_test\app_smoke_test.dart -d chrome` | Blocked | No WebDriver server was running on port `4444` |
+| `flutter test integration_test\phase1_suite_test.dart -d emulator-5554 --dart-define=RUN_FULL_INTEGRATION=true` | Timed out | Full seeded business flows were not fully execution-verified in the local environment |
 
 ---
 
-## 12. Out-of-Scope Flows
+## 9. Per-Test Execution Matrix
 
-- Order Tracking is intentionally out of current production scope.
-- Performance testing.
-- Security rules testing.
-- Broad production refactors.
-- New production feature implementation.
+| File path | Flow | Status | Note |
+|---|---|---|---|
+| `integration_test/app_smoke_test.dart` | App Smoke | Executed successfully | Verified on Android emulator |
+| `integration_test/phase1_suite_test.dart` | Phase 1 Wrapper | Executed successfully in default mode | Standard entry point loads correctly; full scenarios are opt-in |
+| `integration_test/phase2_suite_test.dart` | Phase 2 Wrapper | Executed successfully in default mode | Standard entry point loads correctly; full scenarios are opt-in |
+| `test/integration/phase1/customer_auth_flow_test.dart` | Customer Auth | Implemented | Requires emulators and `RUN_FULL_INTEGRATION=true` |
+| `test/integration/phase1/golden_path_browse_cart_checkout_order_test.dart` | Golden Path | Implemented | Requires emulators and `RUN_FULL_INTEGRATION=true` |
+| `test/integration/phase1/admin_login_flow_test.dart` | Admin Login | Implemented | Requires emulators and `RUN_FULL_INTEGRATION=true` |
+| `test/integration/phase1/admin_add_product_flow_test.dart` | Admin Product Management | Implemented | Requires emulators and `RUN_FULL_INTEGRATION=true` |
+| `test/integration/phase2/admin_order_management_flow_test.dart` | Admin Order Management | Implemented | Requires emulators and `RUN_FULL_INTEGRATION=true` |
+| `test/integration/phase2/admin_category_management_flow_test.dart` | Admin Category Management | Implemented | Requires emulators and `RUN_FULL_INTEGRATION=true` |
+| `test/integration/phase2/admin_bank_details_flow_test.dart` | Admin Bank Details | Implemented | Requires emulators and `RUN_FULL_INTEGRATION=true` |
+| `test/integration/phase2/wishlist_persistence_flow_test.dart` | Wishlist Persistence | Implemented | Requires emulators and `RUN_FULL_INTEGRATION=true` |
+| `test/integration/phase2/profile_update_flow_test.dart` | Profile Update | Implemented | Requires emulators and `RUN_FULL_INTEGRATION=true` |
 
 ---
 
-## 13. Final Status
+## 10. Known Limitations / Risks
+
+- Android smoke execution is verified, but the full seeded business suites were not fully verified in this audit
+- Firebase emulators must be running before opt-in business-flow runs
+- Chrome requires `flutter drive` plus WebDriver
+- The audit environment did not provide WebDriver or Firebase CLI
+- Async Firestore/UI timing can still be a flakiness risk in the full business suites
+
+---
+
+## 11. Final Status
 
 | Category | Status |
 |---|---|
-| Integration implementation | Complete for current production scope |
-| Integration successful execution evidence | Not available from this audit |
-| Integration execution attempt | Attempted but timed out locally |
+| Integration harness fix | Complete |
+| `integration_test` plugin blocker | Resolved for Android device-backed runs |
+| Firebase initialization blocker | Resolved for Android smoke path |
+| Android smoke execution | Verified |
+| Full business-flow execution | Implemented, not fully verified in this audit |
+| Chrome execution | Still environment-blocked |
 | Order Tracking | Intentionally out of current production scope |
-| Documentation alignment | Updated to avoid overclaiming execution verification |
-
----
-
-## 14. Per-Test Execution Matrix
-
-| File path | Flow | Status | Evidence-based note |
-|---|---|---|---|
-| `test/integration/phase1/customer_auth_flow_test.dart` | Customer Auth | Implemented; not execution-verified in this audit | UI auth flow with Auth/Firestore expectations exists |
-| `test/integration/phase1/golden_path_browse_cart_checkout_order_test.dart` | Golden Path | Implemented; not execution-verified in this audit | Product, cart, checkout, order, and cart-empty flow exists |
-| `test/integration/phase1/admin_login_flow_test.dart` | Admin Login | Implemented; not execution-verified in this audit | Secret key, credentials, role, and dashboard flow exists |
-| `test/integration/phase1/admin_add_product_flow_test.dart` | Admin Product Management | Implemented; not execution-verified in this audit | Admin product write and customer catalog reflection flow exists |
-| `test/integration/phase2/admin_order_management_flow_test.dart` | Admin Order Management | Implemented; not execution-verified in this audit | Seeded order status update, Firestore assertion, and customer history reflection exist |
-| `test/integration/phase2/admin_category_management_flow_test.dart` | Admin Category Management | Implemented; not execution-verified in this audit | Category add, Firestore lookup, and admin/customer UI checks exist |
-| `test/integration/phase2/admin_bank_details_flow_test.dart` | Admin Bank Details | Implemented; not execution-verified in this audit | Bank detail update, Firestore assertion, and checkout reflection exist |
-| `test/integration/phase2/wishlist_persistence_flow_test.dart` | Wishlist Persistence | Implemented; not execution-verified in this audit | Wishlist add/remove with Firestore subcollection checks exists |
-| `test/integration/phase2/profile_update_flow_test.dart` | Profile Update | Implemented; not execution-verified in this audit | Profile update with Firestore and profile UI assertions exists |

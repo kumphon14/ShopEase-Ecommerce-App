@@ -2,7 +2,7 @@
 
 **Document role:** Supporting integration planning document  
 **Project:** ShopEase Flutter E-Commerce Application  
-**Status:** Aligned with current production scope on 2026-04-23  
+**Status:** Aligned with current production scope on 2026-04-24  
 **Master report:** `test/TESTING_REPORT.md`  
 **Implementation supplement:** `test/INTEGRATION_TEST_IMPLEMENTATION_REPORT.md`
 
@@ -10,156 +10,122 @@
 
 ## 1. Purpose
 
-This document defines the integration testing scope, environment assumptions, flow priorities, and acceptance criteria for ShopEase. It is retained as a planning document. Current execution evidence and final SEA606 conclusions are consolidated in `test/TESTING_REPORT.md`.
+This document defines the intended integration scope, environment assumptions, and execution strategy for ShopEase. Final evidence and actual execution outcomes are recorded in `test/TESTING_REPORT.md`.
 
 ---
 
 ## 2. Integration Testing Objective
 
-Integration tests must validate cross-boundary production behavior:
+Integration tests should validate cross-boundary production behavior:
 
 ```text
-Flutter UI -> Provider state -> named navigation -> Firebase Auth / Firestore emulator -> UI and data assertions
+Flutter UI -> Provider state -> named navigation -> Firebase Auth / Firestore -> UI and data assertions
 ```
-
-An integration test is not sufficient if it only checks same-screen widget rendering or isolated provider logic.
 
 ---
 
 ## 3. Current Production-Scope Integration Flows
 
-| Flow | Business purpose | Status |
-|---|---|---|
-| Customer Auth Flow | Verify signup, logout, login, and entry into the app | Implemented |
-| Golden Path: Browse -> Detail -> Cart -> Checkout -> Order Creation | Verify the core shopping and order creation journey | Implemented |
-| Admin Login Flow | Verify secret-key, credential, and admin-role access | Implemented |
-| Admin Product Management Flow | Verify product creation and catalog reflection | Implemented |
-| Admin Order Management Flow | Verify seeded order status updates and persistence | Implemented |
-| Admin Category Management Flow | Verify category creation and catalog reflection | Implemented |
-| Admin Bank Details Management Flow | Verify payment setting update and checkout reflection | Implemented |
-| Wishlist Persistence Flow | Verify wishlist add/remove through Firestore-backed provider path | Implemented |
-| Profile Update Flow | Verify supported profile field update and persistence | Implemented |
+- Customer Auth Flow
+- Golden Path: Browse -> Detail -> Cart -> Checkout -> Order Creation
+- Admin Login Flow
+- Admin Product Management Flow
+- Admin Order Management Flow
+- Admin Category Management Flow
+- Admin Bank Details Management Flow
+- Wishlist Persistence Flow
+- Profile Update Flow
 
-Order Tracking is intentionally out of current production scope. The current production app has Order History only; no tracking screen, route, or navigation path is required or restored by this plan.
+Order Tracking is intentionally out of scope.
 
 ---
 
-## 4. Out of Scope
+## 4. Execution Strategy
 
-- Order Tracking integration tests.
-- New production features solely for testing.
-- Broad production refactors.
-- Unit-test-only logic.
-- Widget-only visual assertions.
-- Performance testing.
-- Security rules testing.
-- Live production Firebase testing.
+### Standard Flutter Entry Points
+
+Standard device-backed entry points now live under:
+
+- `integration_test/app_smoke_test.dart`
+- `integration_test/phase1_suite_test.dart`
+- `integration_test/phase2_suite_test.dart`
+
+### Source Scenario Files
+
+The actual business-flow scenario implementations remain under:
+
+- `test/integration/phase1/`
+- `test/integration/phase2/`
+
+### Execution Modes
+
+1. **Smoke mode**
+   - verifies plugin loading
+   - verifies Firebase initialization
+   - verifies app launch and landing
+   - can run through `flutter test integration_test -d emulator-5554`
+
+2. **Full emulator-backed business suites**
+   - require `RUN_FULL_INTEGRATION=true`
+   - require Firebase emulators to already be running
+   - execute the existing source scenario files through the standard wrappers
 
 ---
 
 ## 5. Environment Assumptions
 
-The preferred environment is the Firebase Local Emulator Suite:
-
-| Service | Assumed default |
+| Item | Assumption |
 |---|---|
 | Firestore emulator | `localhost:8080` |
 | Firebase Auth emulator | `localhost:9099` |
-| Android emulator host override | `10.0.2.2` via `--dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2` |
-
-The test runner must load Flutter plugins correctly. Local audit execution did not complete successfully, so the integration layer remains implemented but not execution-verified.
-
----
-
-## 6. Seeding Strategy
-
-Integration tests should start from deterministic data:
-
-- Reset known Firestore collections before each flow.
-- Seed products, categories, payment/bank details, and orders where required.
-- Create or reuse deterministic Firebase Auth emulator accounts.
-- Rewrite Firestore user documents for deterministic customer/admin roles.
-- Clear known wishlist subcollections to avoid state leakage.
-
-The implemented helpers under `test/integration/helpers/` provide this structure.
+| Android emulator host override | `10.0.2.2` |
+| Web smoke runner | `flutter drive` plus WebDriver |
 
 ---
 
-## 7. Stability Strategy
+## 6. Commands
 
-Integration tests should:
-
-- Use stable `Key`-based finders where available.
-- Use explicit wait helpers for widget and Firestore state transitions.
-- Avoid arbitrary sleep-based synchronization.
-- Assert both UI outcome and persistence outcome where production behavior supports it.
-- Keep each flow isolated by reseeding or cleaning affected test data.
-
----
-
-## 8. Flow Acceptance Criteria
-
-| Flow | Required evidence in test logic |
-|---|---|
-| Customer Auth | UI signup/login/logout, Firebase Auth user, Firestore user document, navigation to home/main area |
-| Golden Path | Product selection, cart state, checkout submission, order document creation, cart empty state |
-| Admin Login | Secret key, credential login, admin role validation, dashboard navigation |
-| Admin Product Management | Admin creates product, Firestore document exists, customer catalog reflects product |
-| Admin Order Management | Admin updates seeded order, Firestore status changes, customer order history reflects status if exposed |
-| Admin Category Management | Admin creates category, Firestore document exists, customer category UI reflects category if exposed |
-| Admin Bank Details | Admin updates payment details, Firestore settings update, checkout bank-transfer UI reflects details |
-| Wishlist Persistence | Authenticated user adds/removes product, Firestore wishlist subcollection reflects both states |
-| Profile Update | Supported profile fields update through UI and persist in Firestore/Auth-backed data |
-
----
-
-## 9. Execution Commands
+### Android Smoke
 
 ```powershell
-# Start Firebase emulators
+flutter test integration_test -d emulator-5554
+```
+
+### Full Phase 1
+
+```powershell
 firebase emulators:start --only auth,firestore
+flutter test integration_test\phase1_suite_test.dart -d emulator-5554 --dart-define=RUN_FULL_INTEGRATION=true --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2
+```
 
-# Run all current production-scope integration tests
-flutter test test\integration\phase1 test\integration\phase2
+### Full Phase 2
 
-# Run initial critical flows only
-flutter test test\integration\phase1
+```powershell
+firebase emulators:start --only auth,firestore
+flutter test integration_test\phase2_suite_test.dart -d emulator-5554 --dart-define=RUN_FULL_INTEGRATION=true --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2
+```
 
-# Run remaining current-scope flows only
-flutter test test\integration\phase2
+### Chrome Smoke Fallback
 
-# Android emulator example
-flutter test test\integration\phase1 test\integration\phase2 --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2
+```powershell
+flutter drive --driver=test_driver\integration_test.dart --target=integration_test\app_smoke_test.dart -d chrome
 ```
 
 ---
 
-## 10. Current Execution Status
+## 7. Current Execution Status
 
-During the documentation audit, the all-integration command was attempted but did not complete:
-
-- One run timed out after 300 seconds and printed a PowerShell profile execution-policy warning.
-- A no-profile rerun also timed out after 300 seconds with no passing completion output.
-- The integration implementation supplement records prior local Firebase plugin/platform-channel initialization blockers.
-
-Therefore, current integration status is:
-
-```text
-Implemented but not execution-verified in this local audit environment.
-```
+- Android smoke path: execution verified
+- Standard Android wrappers: execution verified
+- Full seeded business-flow suites: implemented, not fully execution-verified in this audit
+- Chrome standard command: unsupported by current Flutter toolchain
+- Chrome fallback command: requires WebDriver and was blocked in the audit environment
 
 ---
 
-## 11. Risks and Blockers
+## 8. Relationship to Final Report
 
-- Firebase emulator startup/cleanup must be reliable before CI use.
-- Flutter plugin loading must work for the chosen integration runner.
-- Auth emulator users may need deterministic reuse because client SDKs do not bulk-delete Auth users from within app tests.
-- Firestore streams require explicit waits to avoid race-prone assertions.
-- Network images should not be used as assertion targets.
+This plan defines intended strategy only. The final evidence-based position is documented in:
 
----
-
-## 12. Relationship to Final Report
-
-This plan defines intended integration scope and execution strategy. The final evidence-based status is reported in `test/TESTING_REPORT.md`, while implementation file details and the per-test execution matrix are maintained in `test/INTEGRATION_TEST_IMPLEMENTATION_REPORT.md`.
+- `test/TESTING_REPORT.md`
+- `test/INTEGRATION_TEST_IMPLEMENTATION_REPORT.md`

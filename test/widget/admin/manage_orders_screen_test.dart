@@ -2,12 +2,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shopease_ecommerce_app/screens/admin/manage_orders_screen.dart';
 import 'package:shopease_ecommerce_app/services/providers/order_provider.dart';
 
-import '../helpers/fake_providers.dart';
 import '../helpers/pump_app.dart';
 
 void main() {
@@ -21,11 +19,19 @@ void main() {
 
     testWidgets('shows orders when they exist', (tester) async {
       final firestore = FakeFirebaseFirestore();
-      
+
       // Make admin user
-      await firestore.collection('users').doc('admin_uid').set({'role': 'admin'});
-      
-      final orderProvider = OrderProvider(firestore: firestore, auth: MockFirebaseAuth(signedIn: true, mockUser: MockUser(uid: 'admin_uid')));
+      await firestore.collection('users').doc('admin_uid').set({
+        'role': 'admin',
+      });
+
+      final orderProvider = OrderProvider(
+        firestore: firestore,
+        auth: MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: 'admin_uid'),
+        ),
+      );
 
       await firestore.collection('orders').doc('order_123').set({
         'orderId': 'order_123',
@@ -42,20 +48,28 @@ void main() {
       });
 
       await tester.pumpApp(const ManageOrdersScreen(), orders: orderProvider);
-      
+
       await tester.pump(const Duration(milliseconds: 100)); // wait for streams
       await tester.pumpAndSettle();
-      
+
       expect(find.text('order_123'), findsOneWidget);
     });
 
     testWidgets('filtering works', (tester) async {
       final firestore = FakeFirebaseFirestore();
-      
-      await firestore.collection('users').doc('admin_uid').set({'role': 'admin'});
-      
-      final orderProvider = OrderProvider(firestore: firestore, auth: MockFirebaseAuth(signedIn: true, mockUser: MockUser(uid: 'admin_uid')));
-      
+
+      await firestore.collection('users').doc('admin_uid').set({
+        'role': 'admin',
+      });
+
+      final orderProvider = OrderProvider(
+        firestore: firestore,
+        auth: MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: 'admin_uid'),
+        ),
+      );
+
       await firestore.collection('orders').doc('order_123').set({
         'orderId': 'order_123',
         'items': [],
@@ -77,16 +91,19 @@ void main() {
       await tester.pumpApp(const ManageOrdersScreen(), orders: orderProvider);
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
-      
+
       // Initially shows both
       expect(find.text('order_123'), findsOneWidget);
       expect(find.text('order_456'), findsOneWidget);
-      
+
       // Tap Shipped filter
-      await tester.drag(find.text('Shipped (1)').first, const Offset(0, 0)); // make sure it's in view
+      await tester.drag(
+        find.text('Shipped (1)').first,
+        const Offset(0, 0),
+      ); // make sure it's in view
       await tester.tap(find.text('Shipped (1)').first);
       await tester.pumpAndSettle();
-      
+
       expect(find.text('order_456'), findsOneWidget);
       expect(find.text('order_123'), findsNothing);
     });

@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shopease_ecommerce_app/screens/home/home_screen.dart';
 
-import '../helpers/fake_providers.dart';
 import '../helpers/pump_app.dart';
 
 void main() {
@@ -57,7 +56,9 @@ void main() {
     // ------------------------------------------------------------------
     // Empty state (default — Firestore has no data)
     // ------------------------------------------------------------------
-    testWidgets('renders no-products-in-category message when empty', (tester) async {
+    testWidgets('renders no-products-in-category message when empty', (
+      tester,
+    ) async {
       await tester.pumpApp(const HomeScreen());
       await tester.pump();
       expect(find.text('No products in this category'), findsOneWidget);
@@ -99,7 +100,9 @@ void main() {
       expect(observer.pushedRoutes.isNotEmpty, isTrue);
     });
 
-    testWidgets('tapping notification icon navigates to notifications route', (tester) async {
+    testWidgets('tapping notification icon navigates to notifications route', (
+      tester,
+    ) async {
       final observer = _TestNavigatorObserver();
       await tester.pumpApp(const HomeScreen(), observers: [observer]);
       await tester.pump();
